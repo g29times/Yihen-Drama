@@ -1422,6 +1422,9 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 520px;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -1429,7 +1432,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px;
+  padding: 18px 24px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -1456,10 +1459,11 @@ onBeforeUnmount(() => {
 }
 
 .modal-body {
-  padding: 24px;
+  padding: 18px 24px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
+  overflow-y: auto;
 }
 
 .form-group {
@@ -1487,15 +1491,15 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-glass);
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .cover-upload-preview {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 104px;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--border-color);
@@ -1510,7 +1514,7 @@ onBeforeUnmount(() => {
 
 .cover-upload-placeholder {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 104px;
   border-radius: 8px;
   border: 1px dashed var(--border-color);
   display: flex;
@@ -1518,6 +1522,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   color: var(--text-muted);
   font-size: 12px;
+  text-align: center;
+  padding: 0 12px;
 }
 
 .cover-upload-actions {
@@ -1539,9 +1545,9 @@ onBeforeUnmount(() => {
   }
   
   > div {
-    aspect-ratio: 1;
+    height: 56px;
     border-radius: 4px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     border: 2px solid transparent;
     transition: all var(--transition-base);
   }
@@ -1563,7 +1569,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  padding: 24px;
+  padding: 18px 24px;
   border-top: 1px solid var(--border-color);
 }
 
@@ -1584,6 +1590,9 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 520px;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   will-change: transform, opacity;
 }
