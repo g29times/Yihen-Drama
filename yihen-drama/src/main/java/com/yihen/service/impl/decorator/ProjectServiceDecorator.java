@@ -11,13 +11,18 @@ import com.yihen.mapper.ProjectMapper;
 import com.yihen.service.ProjectService;
 import com.yihen.util.LambdaFieldUtils;
 import com.yihen.util.RedisUtils;
+import io.minio.errors.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -110,8 +115,6 @@ public class ProjectServiceDecorator extends ServiceImpl<ProjectMapper, Project>
     @Override
     public void updateProjectById(Project project) {
         projectService.updateProjectById(project);
-        // 更新对应缓存
-        redisUtils.updateHashPartial(ProjectRedisConstant.PROJECT_INFO_KEY + project.getId(), project);
 
         // 发送同步ES消息
         rabbitTemplate.convertAndSend(ProjectMQConstant.PROJECT_INFO_EXCHANGE, ProjectMQConstant.PROJECT_INFO_UPDATE_KEY, project);
@@ -143,5 +146,13 @@ public class ProjectServiceDecorator extends ServiceImpl<ProjectMapper, Project>
         }
         return projects;
 
+    }
+
+    @Override
+    public Project upload(Long projectId, MultipartFile file) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        Project project = projectService.upload(projectId, file);
+        // 发送同步ES消息
+        rabbitTemplate.convertAndSend(ProjectMQConstant.PROJECT_INFO_EXCHANGE, ProjectMQConstant.PROJECT_INFO_UPDATE_KEY, project);
+        return project;
     }
 }

@@ -93,6 +93,13 @@ export const projectApi = {
     style: data.style,
     cover: generateRandomCover(data.name, data.style)
   }),
+  upload: (projectId, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return apiClient.post(`/api/projects/upload/${projectId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
   update: (data) => apiClient.put('/api/projects/update', data),
   delete: (id) => apiClient.delete(`/api/projects/${id}`)
 }

@@ -54,6 +54,8 @@ public class ProjectListener {
         // ES同步
         projectSearchRepository.save(ProjectDocMapper.toDoc(project));
         // Redis同步
+        // 更新对应缓存
+        redisUtils.updateHashPartial(ProjectRedisConstant.PROJECT_INFO_KEY + project.getId(), project);
         projectInitializer.run(null);
     }
 

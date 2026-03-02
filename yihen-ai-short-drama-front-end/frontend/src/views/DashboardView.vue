@@ -128,7 +128,13 @@
             @click="openProject(project)"
           >
             <div class="project-cover">
-              <div class="project-cover-content">
+              <img
+                v-if="project.cover"
+                :src="project.cover"
+                :alt="project.name"
+                class="project-cover-image"
+              />
+              <div v-else class="project-cover-content">
                 <div class="cover-decoration">
                   <div class="deco-line deco-line-1"></div>
                   <div class="deco-line deco-line-2"></div>
@@ -257,6 +263,34 @@
                   </label>
                 </div>
               </div>
+              <div class="form-group">
+                <label class="form-label">项目封面（可选）</label>
+                <div class="cover-upload">
+                  <input
+                    ref="createCoverInputRef"
+                    type="file"
+                    accept="image/*"
+                    class="cover-upload-input"
+                    @change="handleCreateCoverFileChange"
+                  />
+                  <div class="cover-upload-main">
+                    <div class="cover-upload-preview" v-if="createCoverPreview">
+                      <img :src="createCoverPreview" alt="封面预览" />
+                    </div>
+                    <div class="cover-upload-placeholder" v-else>
+                      不上传则使用默认封面
+                    </div>
+                    <div class="cover-upload-actions">
+                      <button type="button" class="btn btn-secondary" @click="triggerCreateCoverUpload">
+                        {{ createCoverFile ? '重新选择' : '选择图片' }}
+                      </button>
+                      <button type="button" class="btn btn-secondary" v-if="createCoverFile" @click="clearCreateCoverFile">
+                        移除
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" @click="showCreateModal = false">取消</button>
@@ -291,6 +325,34 @@
               <div class="form-group">
                 <label class="form-label">项目描述</label>
                 <textarea class="input textarea" v-model="editProject.description" placeholder="输入项目描述（可选）"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">项目封面（可选）</label>
+                <div class="cover-upload">
+                  <input
+                    ref="editCoverInputRef"
+                    type="file"
+                    accept="image/*"
+                    class="cover-upload-input"
+                    @change="handleEditCoverFileChange"
+                  />
+                  <div class="cover-upload-main">
+                    <div class="cover-upload-preview" v-if="editCoverPreview">
+                      <img :src="editCoverPreview" alt="封面预览" />
+                    </div>
+                    <div class="cover-upload-placeholder" v-else>
+                      未设置封面，使用默认封面
+                    </div>
+                    <div class="cover-upload-actions">
+                      <button type="button" class="btn btn-secondary" @click="triggerEditCoverUpload">
+                        {{ editCoverFile ? '重新选择' : '选择图片' }}
+                      </button>
+                      <button type="button" class="btn btn-secondary" v-if="editCoverFile" @click="clearEditCoverFile">
+                        移除
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="modal-footer">
@@ -339,6 +401,12 @@ let searchDebounceTimer = null
 let suggestDebounceTimer = null
 const showDeleteProjectConfirm = ref(false)
 const pendingDeleteProjectId = ref(null)
+const createCoverInputRef = ref(null)
+const editCoverInputRef = ref(null)
+const createCoverFile = ref(null)
+const editCoverFile = ref(null)
+const createCoverPreview = ref('')
+const editCoverPreview = ref('')
 
 const filterTabs = [
   { label: '全部', value: 'all' },
@@ -375,7 +443,8 @@ const newProject = ref({
 const editProject = ref({
   id: null,
   name: '',
-  description: ''
+  description: '',
+  cover: ''
 })
 
 const projects = ref([])
@@ -501,7 +570,67 @@ const fetchSearchSuggestions = async (prefix) => {
 }
 
 const createProject = () => {
+  newProject.value = { name: '', description: '', style: 1 }
+  createCoverFile.value = null
+  createCoverPreview.value = ''
+  if (createCoverInputRef.value) {
+    createCoverInputRef.value.value = ''
+  }
   showCreateModal.value = true
+}
+
+const fileToDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(new Error('读取图片失败'))
+    reader.readAsDataURL(file)
+  })
+
+const triggerCreateCoverUpload = () => {
+  createCoverInputRef.value?.click()
+}
+
+const triggerEditCoverUpload = () => {
+  editCoverInputRef.value?.click()
+}
+
+const handleCreateCoverFileChange = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  createCoverFile.value = file
+  try {
+    createCoverPreview.value = await fileToDataUrl(file)
+  } catch (err) {
+    toast.error(err.message || '图片读取失败')
+  }
+}
+
+const handleEditCoverFileChange = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  editCoverFile.value = file
+  try {
+    editCoverPreview.value = await fileToDataUrl(file)
+  } catch (err) {
+    toast.error(err.message || '图片读取失败')
+  }
+}
+
+const clearCreateCoverFile = () => {
+  createCoverFile.value = null
+  createCoverPreview.value = ''
+  if (createCoverInputRef.value) {
+    createCoverInputRef.value.value = ''
+  }
+}
+
+const clearEditCoverFile = () => {
+  editCoverFile.value = null
+  editCoverPreview.value = editProject.value.cover || ''
+  if (editCoverInputRef.value) {
+    editCoverInputRef.value.value = ''
+  }
 }
 
 const handleCreateProject = async () => {
@@ -516,11 +645,23 @@ const handleCreateProject = async () => {
     })
     
     if (result.code === 200 && result.data) {
-      projects.value.unshift(result.data)
+      let createdProject = result.data
+      if (createCoverFile.value) {
+        try {
+          const uploadResult = await projectApi.upload(createdProject.id, createCoverFile.value)
+          if (uploadResult.code === 200 && uploadResult.data) {
+            createdProject = { ...createdProject, ...uploadResult.data }
+          }
+        } catch (uploadErr) {
+          toast.error(uploadErr.message || '封面上传失败，已使用默认封面')
+        }
+      }
+      projects.value.unshift(createdProject)
       showCreateModal.value = false
       newProject.value = { name: '', description: '', style: 1 }
+      clearCreateCoverFile()
       toast.success('创建成功')
-      router.push(`/workspace/${result.data.id}`)
+      router.push(`/workspace/${createdProject.id}`)
     }
   } catch (err) {
     console.error('创建项目失败:', err)
@@ -565,7 +706,13 @@ const openEditModal = (project) => {
   editProject.value = {
     id: project.id,
     name: project.name,
-    description: project.description || ''
+    description: project.description || '',
+    cover: project.cover || ''
+  }
+  editCoverFile.value = null
+  editCoverPreview.value = project.cover || ''
+  if (editCoverInputRef.value) {
+    editCoverInputRef.value.value = ''
   }
   showEditModal.value = true
   openMenuId.value = null
@@ -579,16 +726,32 @@ const handleUpdateProject = async () => {
     const result = await projectApi.update({
       id: editProject.value.id,
       name: editProject.value.name,
-      description: editProject.value.description
+      description: editProject.value.description,
+      cover: editProject.value.cover
     })
     
     if (result.code === 200) {
+      let latestProject = null
+      if (editCoverFile.value) {
+        try {
+          const uploadResult = await projectApi.upload(editProject.value.id, editCoverFile.value)
+          if (uploadResult.code === 200 && uploadResult.data) {
+            latestProject = uploadResult.data
+          }
+        } catch (uploadErr) {
+          toast.error(uploadErr.message || '封面上传失败，已保留原封面')
+        }
+      }
       const index = projects.value.findIndex(p => p.id === editProject.value.id)
       if (index > -1) {
         projects.value[index].name = editProject.value.name
         projects.value[index].description = editProject.value.description
+        if (latestProject?.cover) {
+          projects.value[index].cover = latestProject.cover
+        }
       }
       showEditModal.value = false
+      clearEditCoverFile()
       toast.success('修改成功')
     }
   } catch (err) {
@@ -957,6 +1120,13 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+.project-cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .project-card-header {
   position: absolute;
   top: 0;
@@ -1307,6 +1477,52 @@ onBeforeUnmount(() => {
 .textarea {
   min-height: 100px;
   resize: vertical;
+}
+
+.cover-upload-input {
+  display: none;
+}
+
+.cover-upload-main {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-glass);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cover-upload-preview {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.cover-upload-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  border: 1px dashed var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.cover-upload-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .style-options {
