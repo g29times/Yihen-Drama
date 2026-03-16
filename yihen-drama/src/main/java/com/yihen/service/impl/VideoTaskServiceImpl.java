@@ -193,7 +193,7 @@ public class VideoTaskServiceImpl extends ServiceImpl<VideoTaskMapper, VideoTask
         }
 
         // 回写访问地址
-        String videoUrl = minioProperties.getEndPoint() + "/" + MinioConstant.BUCKET_NAME + "/" + objectName;
+        String videoUrl = minioUtil.buildDbPath(MinioConstant.BUCKET_NAME, objectName);
 
         characters.setVideoUrl(videoUrl);
 
@@ -232,7 +232,7 @@ public class VideoTaskServiceImpl extends ServiceImpl<VideoTaskMapper, VideoTask
         }
 
         // 回写访问地址
-        String videoUrl = minioProperties.getEndPoint() + "/" + MinioConstant.BUCKET_NAME + "/" + objectName;
+        String videoUrl = minioUtil.buildDbPath(MinioConstant.BUCKET_NAME, objectName);
 
         storyboard.setVideoUrl(videoUrl);
 

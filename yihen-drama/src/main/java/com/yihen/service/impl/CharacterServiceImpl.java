@@ -126,7 +126,7 @@ public class CharacterServiceImpl extends ServiceImpl<CharacterMapper, Character
 
 
         // 修改场景图片url
-        String avatar = minioProperties.getEndPoint() + "/" + MinioConstant.BUCKET_NAME + "/" + objectName;
+        String avatar = minioUtil.buildDbPath(MinioConstant.BUCKET_NAME, objectName);
 
         // 校验：是否 Minio中存在图片
         if (!ObjectUtils.isEmpty(characters.getAvatar()) && !characters.getAvatar().equals(avatar)) {

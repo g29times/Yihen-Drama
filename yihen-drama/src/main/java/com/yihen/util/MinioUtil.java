@@ -23,38 +23,64 @@ public class MinioUtil {
     @Resource
     private MinioProperties minioProperties;
 
-     public String getRealObjectName(String pathOrUrl) {
-         return parseObjectName(pathOrUrl);
-     }
+    public String getRealObjectName(String pathOrUrl) {
+        return parseObjectName(pathOrUrl);
+    }
 
-     public String parseObjectName(String pathOrUrl) {
-         if (pathOrUrl == null || pathOrUrl.isBlank()) {
-             return null;
-         }
+    public String parseObjectName(String pathOrUrl) {
+        if (pathOrUrl == null || pathOrUrl.isBlank()) {
+            return null;
+        }
 
-         String clean = pathOrUrl;
-         int q = clean.indexOf('?');
-         if (q >= 0) {
-             clean = clean.substring(0, q);
-         }
-         int f = clean.indexOf('#');
-         if (f >= 0) {
-             clean = clean.substring(0, f);
-         }
+        String clean = pathOrUrl;
+        int q = clean.indexOf('?');
+        if (q >= 0) {
+            clean = clean.substring(0, q);
+        }
+        int f = clean.indexOf('#');
+        if (f >= 0) {
+            clean = clean.substring(0, f);
+        }
 
-         String bucket = (minioProperties == null) ? null : minioProperties.getBucketName();
-         if (bucket == null || bucket.isBlank()) {
-             bucket = MinioConstant.BUCKET_NAME;
-         }
+        String bucket = (minioProperties == null) ? null : minioProperties.getBucketName();
+        if (bucket == null || bucket.isBlank()) {
+            bucket = MinioConstant.BUCKET_NAME;
+        }
 
-         String marker = "/" + bucket + "/";
-         int index = clean.indexOf(marker);
-         if (index != -1) {
-             return clean.substring(index + marker.length());
-         }
+        String marker = "/" + bucket + "/";
+        int index = clean.indexOf(marker);
+        if (index != -1) {
+            return clean.substring(index + marker.length());
+        }
 
-         return clean;
-     }
+        return clean;
+    }
+
+    public String buildDbPath(String bucketName, String pathOrUrl) {
+        String realObjectName = parseObjectName(pathOrUrl);
+        if (realObjectName == null || realObjectName.isBlank()) {
+            return null;
+        }
+
+        String obj = realObjectName;
+        while (obj.startsWith("/")) {
+            obj = obj.substring(1);
+        }
+
+        String bucket = bucketName;
+        if (bucket == null || bucket.isBlank()) {
+            bucket = (minioProperties == null) ? null : minioProperties.getBucketName();
+        }
+        if (bucket == null || bucket.isBlank()) {
+            bucket = MinioConstant.BUCKET_NAME;
+        }
+
+        if (obj.startsWith(bucket + "/")) {
+            obj = obj.substring((bucket + "/").length());
+        }
+
+        return "/" + bucket + "/" + obj;
+    }
 
     // 上传文件到指定位置
     public  void uploadFile(MultipartFile file, String bucketName, String objectName) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {

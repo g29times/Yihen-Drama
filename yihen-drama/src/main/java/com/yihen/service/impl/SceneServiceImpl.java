@@ -111,7 +111,7 @@ public class SceneServiceImpl extends ServiceImpl<SceneMapper, Scene> implements
 
 
         // 修改场景图片url
-        String thumbnail = minioProperties.getEndPoint() + "/" + MinioConstant.BUCKET_NAME + "/" + objectName;
+        String thumbnail = minioUtil.buildDbPath(MinioConstant.BUCKET_NAME, objectName);
 
         // 校验：是否 Minio中存在图片
         if (!ObjectUtils.isEmpty(scene.getThumbnail()) && !scene.getThumbnail().equals(thumbnail)) {

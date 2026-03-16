@@ -168,7 +168,7 @@ public class StoryboardPersistFacade {
                 img.length,
                 MinioConstant.BUCKET_NAME, objectName);
 
-        String thumbnail = minioProperties.getEndPoint() + "/" + MinioConstant.BUCKET_NAME + "/" + objectName;
+        String thumbnail = minioUtil.buildDbPath(MinioConstant.BUCKET_NAME, objectName);
         storyboard.setThumbnail(thumbnail);
 
         // 修改章节状态
