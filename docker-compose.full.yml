@@ -87,7 +87,7 @@ services:
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      ES_JAVA_OPTS: "-Xms2g -Xmx2g"
       TZ: Asia/Shanghai
     ports:
       - "9200:9200"
@@ -134,6 +134,8 @@ services:
         JRE_IMAGE: docker.1ms.run/library/eclipse-temurin:17-jre
     container_name: yihen-backend
     restart: unless-stopped
+    environment:
+      ES_JAVA_OPTS: "-Xms1g -Xmx2g"
     depends_on:
       mysql:
         condition: service_healthy
