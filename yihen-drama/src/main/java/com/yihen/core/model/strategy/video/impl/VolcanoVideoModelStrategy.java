@@ -122,8 +122,7 @@ public class VolcanoVideoModelStrategy implements VideoModelStrategy {
 
 
         // 2. 图片转换为Base64
-        String objectName = storyboard.getThumbnail().replace(minioProperties.getEndPoint() + "/" + MinioConstant.BUCKET_NAME + "/", "");
-        GetObjectResponse object = minioUtil.getObject(MinioConstant.BUCKET_NAME, objectName);
+        GetObjectResponse object = minioUtil.getObject(MinioConstant.BUCKET_NAME, storyboard.getThumbnail());
         String imageFormat = UrlUtils.extractFileExtension(storyboard.getThumbnail());
         byte[] bytes = object.readAllBytes();
         String base64Image = Base64.getEncoder().encodeToString(bytes);
@@ -158,8 +157,7 @@ public class VolcanoVideoModelStrategy implements VideoModelStrategy {
         String text = String.format(CONTENT_TEMPLATE, description, characters.getName());
 
         // 2. 图片转换为Base64
-        String objectName = characters.getAvatar().replace(minioProperties.getEndPoint() + "/" + MinioConstant.BUCKET_NAME + "/", "");
-        GetObjectResponse object = minioUtil.getObject(MinioConstant.BUCKET_NAME, objectName);
+        GetObjectResponse object = minioUtil.getObject(MinioConstant.BUCKET_NAME, characters.getAvatar());
         String imageFormat = UrlUtils.extractFileExtension(characters.getAvatar());
         byte[] bytes = object.readAllBytes();
         String base64Image = Base64.getEncoder().encodeToString(bytes);

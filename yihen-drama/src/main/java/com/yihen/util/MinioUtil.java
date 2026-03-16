@@ -1,5 +1,7 @@
 package com.yihen.util;
 
+ import com.yihen.constant.MinioConstant;
+ import com.yihen.config.properties.MinioProperties;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.http.Method;
@@ -17,6 +19,42 @@ import java.util.concurrent.TimeUnit;
 public class MinioUtil {
     @Resource
     private  MinioClient minioClient;
+
+    @Resource
+    private MinioProperties minioProperties;
+
+     public String getRealObjectName(String pathOrUrl) {
+         return parseObjectName(pathOrUrl);
+     }
+
+     public String parseObjectName(String pathOrUrl) {
+         if (pathOrUrl == null || pathOrUrl.isBlank()) {
+             return null;
+         }
+
+         String clean = pathOrUrl;
+         int q = clean.indexOf('?');
+         if (q >= 0) {
+             clean = clean.substring(0, q);
+         }
+         int f = clean.indexOf('#');
+         if (f >= 0) {
+             clean = clean.substring(0, f);
+         }
+
+         String bucket = (minioProperties == null) ? null : minioProperties.getBucketName();
+         if (bucket == null || bucket.isBlank()) {
+             bucket = MinioConstant.BUCKET_NAME;
+         }
+
+         String marker = "/" + bucket + "/";
+         int index = clean.indexOf(marker);
+         if (index != -1) {
+             return clean.substring(index + marker.length());
+         }
+
+         return clean;
+     }
 
     // 上传文件到指定位置
     public  void uploadFile(MultipartFile file, String bucketName, String objectName) throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
@@ -85,10 +123,11 @@ public class MinioUtil {
     // 删除对象
     public void deleteObject(String bucketName, String Object) {
         try {
+            String realObjectName = parseObjectName(Object);
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(Object)
+                            .object(realObjectName)
                             .build()
             );
         } catch (Exception e) {
@@ -133,10 +172,11 @@ public class MinioUtil {
     // 获取对象
     public GetObjectResponse getObject(String bucketName, String Object) {
         try {
+            String realObjectName = parseObjectName(Object);
             return minioClient.getObject(
                     GetObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(Object)
+                            .object(realObjectName)
                             .build()
             );
         } catch (Exception e) {

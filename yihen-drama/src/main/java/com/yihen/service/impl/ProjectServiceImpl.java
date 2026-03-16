@@ -154,8 +154,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
         // 校验：是否 Minio中存在图片
         if (!org.springframework.util.ObjectUtils.isEmpty(project.getCover()) && !project.getCover().equals(cover)) {
             // 存在且不相同，则删除原来的
-            String oldObjectName = project.getCover().replace(minioProperties.getEndPoint() + "/" + MinioConstant.BUCKET_NAME + "/", "");
-            minioUtil.deleteObject(MinioConstant.BUCKET_NAME, oldObjectName);
+            minioUtil.deleteObject(MinioConstant.BUCKET_NAME, project.getCover());
         }
 
         project.setCover(cover);
