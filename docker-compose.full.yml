@@ -126,6 +126,8 @@ services:
       - qdrant_data:/qdrant/storage
 
   backend:
+    ports:
+      - "8081:8080"
     build:
       context: ./yihen-drama
       dockerfile: Dockerfile
@@ -172,10 +174,10 @@ services:
       QDRANT_MAX_OVERLAP_SIZE_IN_TOKENS: 30
       QDRANT_MAX_RESULT: 5
       QDRANT_MIN_SCORE: 0.8
-    ports:
-      - "8080:8080"
 
   frontend:
+    ports:
+      - "3001:3000"
     build:
       context: ./yihen-ai-short-drama-front-end/frontend
       dockerfile: Dockerfile
@@ -186,8 +188,6 @@ services:
     depends_on:
       backend:
         condition: service_started
-    ports:
-      - "3000:3000"
 
 volumes:
   mysql_data:
