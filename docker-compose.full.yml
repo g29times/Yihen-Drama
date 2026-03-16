@@ -136,8 +136,6 @@ services:
         JRE_IMAGE: docker.1ms.run/library/eclipse-temurin:17-jre
     container_name: yihen-backend
     restart: unless-stopped
-    environment:
-      ES_JAVA_OPTS: "-Xms1g -Xmx2g"
     depends_on:
       mysql:
         condition: service_healthy
@@ -152,6 +150,7 @@ services:
       qdrant:
         condition: service_started
     environment:
+      ES_JAVA_OPTS: "-Xms1g -Xmx2g"
       TZ: Asia/Shanghai
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/YihenDrama?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2b8
       SPRING_DATASOURCE_USERNAME: root
