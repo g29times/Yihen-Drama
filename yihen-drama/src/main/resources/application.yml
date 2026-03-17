@@ -52,6 +52,7 @@ minio:
 
 volcano:
   image-fallback-url: https://i0.hdslb.com/bfs/openplatform/7d83a4ef2391015fb6f97a1a2c23a8a2c9065012.jpg
+  video-image-fallback-url: https://i0.hdslb.com/bfs/openplatform/7d83a4ef2391015fb6f97a1a2c23a8a2c9065012.jpg
 
 qdrant:
   host: localhost

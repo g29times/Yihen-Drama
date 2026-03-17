@@ -68,3 +68,27 @@ curl -X POST https://ark.cn-beijing.volces.com/api/v3/images/generations \
     "stream": true,
     "watermark": true
 }'
+
+---
+
+视频模型
+
+# 创建 图生视频 任务
+curl -X POST https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ARK_API_KEY" \
+  -d '{
+    "model": "doubao-seedance-1-5-pro-251215",
+    "content": [
+        {
+            "type": "text",
+            "text": "无人机以极快速度穿越复杂障碍或自然奇观，带来沉浸式飞行体验  --duration 5 --camerafixed false --watermark true"
+        },
+        {
+            "type": "image_url",
+            "image_url": {
+                "url": "https://ark-project.tos-cn-beijing.volces.com/doc_image/seepro_i2v.png"
+            }
+        }
+    ]
+}'

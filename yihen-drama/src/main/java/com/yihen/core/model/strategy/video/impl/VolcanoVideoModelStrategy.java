@@ -17,16 +17,15 @@ import com.yihen.service.CharacterService;
 import com.yihen.service.ModelManageService;
 import com.yihen.service.PromptTemplateService;
 import com.yihen.util.MinioUtil;
-import com.yihen.util.UrlUtils;
-import io.minio.GetObjectResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Base64;
 import java.util.HashMap;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * 火山引擎视频生成策略
@@ -59,6 +58,9 @@ public class VolcanoVideoModelStrategy implements VideoModelStrategy {
 
     @Autowired
     private CharacterService characterService;
+
+    @Value("${volcano.video-image-fallback-url:}")
+    private String videoImageFallbackUrl;
 
     // 创建一个固定大小的线程池
 
@@ -118,15 +120,9 @@ public class VolcanoVideoModelStrategy implements VideoModelStrategy {
     private static final String CONTENT_TEMPLATE = "人物的基本描述（只关注其中的外貌描述）如下: %s," +
             "生成符合该描述的视频,视频内容为: 图中的人物，对着镜头打招呼，说：你好，我是：%s";
 
-    private Object buildBody(Storyboard storyboard) throws IOException {
+    private Object buildBody(Storyboard storyboard) {
 
-
-        // 2. 图片转换为Base64
-        GetObjectResponse object = minioUtil.getObject(MinioConstant.BUCKET_NAME, storyboard.getThumbnail());
-        String imageFormat = UrlUtils.extractFileExtension(storyboard.getThumbnail());
-        byte[] bytes = object.readAllBytes();
-        String base64Image = Base64.getEncoder().encodeToString(bytes);
-        String base64DataUri = "data:image/" + imageFormat + ";base64," + base64Image;
+        String imageUrl = resolvePublicImageUrl(storyboard != null ? storyboard.getThumbnail() : null);
 
         // 3. 创建JSON数组并填充数据
         JSONArray jsonArray = new JSONArray();
@@ -140,7 +136,7 @@ public class VolcanoVideoModelStrategy implements VideoModelStrategy {
         // 添加图片URL对象
         JSONObject imageObject = new JSONObject();
         JSONObject imageUrlObject = new JSONObject();
-        imageUrlObject.put("url", base64DataUri);
+        imageUrlObject.put("url", imageUrl);
         imageObject.put("image_url", imageUrlObject);
         imageObject.put("type", "image_url");
         jsonArray.add(imageObject);
@@ -148,20 +144,63 @@ public class VolcanoVideoModelStrategy implements VideoModelStrategy {
         return jsonArray;
     }
 
+    private String resolvePublicImageUrl(String pathOrUrl) {
+        if (!ObjectUtils.isEmpty(videoImageFallbackUrl)) {
+            return videoImageFallbackUrl;
+        }
+        if (ObjectUtils.isEmpty(pathOrUrl)) {
+            throw new IllegalStateException("参考图为空");
+        }
+
+        String trimmed = pathOrUrl.trim();
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return trimmed;
+        }
+
+        String objectName = minioUtil.parseObjectName(trimmed);
+        while (objectName != null && objectName.startsWith("/")) {
+            objectName = objectName.substring(1);
+        }
+        if (ObjectUtils.isEmpty(objectName)) {
+            throw new IllegalStateException("参考图 objectName 解析为空：" + pathOrUrl);
+        }
+
+        if (minioProperties != null && !ObjectUtils.isEmpty(minioProperties.getPublicDownloadEndpoint())) {
+            String base = minioProperties.getPublicDownloadEndpoint();
+            if (base.endsWith("/")) {
+                base = base.substring(0, base.length() - 1);
+            }
+            return base + "/" + MinioConstant.BUCKET_NAME + "/" + encodePath(objectName);
+        }
+
+        return minioUtil.getObjectUrl(MinioConstant.BUCKET_NAME, objectName);
+    }
+
+    private static String encodePath(String objectName) {
+        if (objectName == null) {
+            return null;
+        }
+        String[] parts = objectName.split("/");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) {
+                sb.append('/');
+            }
+            String encoded = URLEncoder.encode(parts[i], StandardCharsets.UTF_8).replace("+", "%20");
+            sb.append(encoded);
+        }
+        return sb.toString();
+    }
+
     // 构建body内容
-    private Object buildBody(Long characterId , String  description) throws IOException {
+    private Object buildBody(Long characterId , String  description) {
         // 获取角色
         Characters characters = characterService.getById(characterId);
 
         // 1. 文本提示词
         String text = String.format(CONTENT_TEMPLATE, description, characters.getName());
 
-        // 2. 图片转换为Base64
-        GetObjectResponse object = minioUtil.getObject(MinioConstant.BUCKET_NAME, characters.getAvatar());
-        String imageFormat = UrlUtils.extractFileExtension(characters.getAvatar());
-        byte[] bytes = object.readAllBytes();
-        String base64Image = Base64.getEncoder().encodeToString(bytes);
-        String base64DataUri = "data:image/" + imageFormat + ";base64," + base64Image;
+        String imageUrl = resolvePublicImageUrl(characters.getAvatar());
 
         // 3. 创建JSON数组并填充数据
         JSONArray jsonArray = new JSONArray();
@@ -175,7 +214,7 @@ public class VolcanoVideoModelStrategy implements VideoModelStrategy {
         // 添加图片URL对象
         JSONObject imageObject = new JSONObject();
         JSONObject imageUrlObject = new JSONObject();
-        imageUrlObject.put("url", base64DataUri);
+        imageUrlObject.put("url", imageUrl);
         imageObject.put("image_url", imageUrlObject);
         imageObject.put("type", "image_url");
         jsonArray.add(imageObject);
