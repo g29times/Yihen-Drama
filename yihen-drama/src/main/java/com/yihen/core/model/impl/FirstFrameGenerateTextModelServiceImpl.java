@@ -44,6 +44,7 @@ public class FirstFrameGenerateTextModelServiceImpl extends TextModelServiceImpl
 
     @Override
     public  String extract(TextModelRequestVO textModelRequestVO) throws Exception {
+        long start = System.currentTimeMillis();
         // 1) 提示词模板
         PromptTemplate promptTemplate =
                 promptTemplateService.getDefaultTemplateBySceneCode(textModelRequestVO.getSceneCode());
@@ -67,6 +68,7 @@ public class FirstFrameGenerateTextModelServiceImpl extends TextModelServiceImpl
         // 5) 调用大模型
         String response = generate(textModelRequestVO.getModelId(), message);
 
+        log.info("[FirstFrameText] storyboardId={} total={}ms", storyboard.getId(), System.currentTimeMillis() - start);
 
         return response;
     }

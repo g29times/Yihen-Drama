@@ -260,6 +260,7 @@ public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storybo
 
     @Override
     public Storyboard generateFirstFramePrompt(Long id,Long projectId , Long modelId) throws Exception {
+        long start = System.currentTimeMillis();
         // 1. 获取分镜对象
 
         Storyboard storyboard = getStoryboardsById(id);
@@ -277,11 +278,14 @@ public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storybo
         // 创建异步任务，异步更新数据库
         storyboardPersistFacade.updatePromptAsync(storyboard);
 
+        log.info("[Storyboard] generateFirstFramePrompt storyboardId={} total={}ms", storyboard.getId(), System.currentTimeMillis() - start);
+
         return storyboard;
     }
 
     @Override
     public Storyboard generateFirstFrame(Long shotId, Long projectId, Long modelInstanceId) throws Exception {
+        long start = System.currentTimeMillis();
         // 获取对应的策略模型
         ImageModelStrategy strategy = imageModelFactory.getStrategy(modelInstanceId);
 
@@ -292,17 +296,20 @@ public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storybo
         imageModelRequestVO.setModelInstanceId(modelInstanceId);
         imageModelRequestVO.setObject(storyboard);
 
+        // 生成首帧图
         String byTextAndImage = strategy.createByTextAndImage(imageModelRequestVO);
 
         storyboard.setThumbnail(byTextAndImage);
 
         //  更新数据
         storyboardPersistFacade.updateFirstFrameAsync(storyboard,projectId);
+        log.info("[Storyboard] generateFirstFrame storyboardId={} total={}ms", storyboard.getId(), System.currentTimeMillis() - start);
         return storyboard;
     }
 
     @Override
     public Storyboard generateShotVideoPrompt(Long shotId, Long projectId, Long modelInstanceId) throws Exception {
+        long start = System.currentTimeMillis();
         // 1. 获取分镜对象
 
         Storyboard storyboard = getStoryboardsById(shotId);
@@ -320,11 +327,14 @@ public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storybo
         // 创建异步任务，异步更新数据库
         storyboardPersistFacade.updatePromptAsync(storyboard);
 
+        log.info("[Storyboard] generateShotVideoPrompt storyboardId={} total={}ms", storyboard.getId(), System.currentTimeMillis() - start);
+
         return storyboard;
     }
 
     @Override
     public VideoTask createShotVideoTask(Long shotId, Long projectId, Long modelInstanceId, Map<String,Object> params) throws Exception {
+        long start = System.currentTimeMillis();
         // 非空校验
         if (ObjectUtils.isEmpty(modelInstanceId)) {
 
@@ -360,6 +370,7 @@ public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storybo
         videoTask.setPollCount(0);
         videoTask.setStatus("QUEUED");
 
+        log.info("[Storyboard] createShotVideoTask storyboardId={} total={}ms", shotId, System.currentTimeMillis() - start);
 
         // 5. 添加任务信息到数据库
         videoTaskService.save(videoTask);

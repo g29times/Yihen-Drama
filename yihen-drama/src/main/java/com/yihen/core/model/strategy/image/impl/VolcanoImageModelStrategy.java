@@ -48,14 +48,19 @@ public class VolcanoImageModelStrategy implements ImageModelStrategy {
         return "";
     }
 
+    // 生成首帧图
     @Override
     public String createByTextAndImage(ImageModelRequestVO imageModelRequestVO) throws Exception {
+        long totalStart = System.currentTimeMillis();
+        long stageStart;
+
         // 0. 获取分镜对象
         Storyboard storyboard = (Storyboard) imageModelRequestVO.getObject();
 
         ArrayList<String> image = new ArrayList<>();
 
         // 将分镜关联图像转换为base64
+        stageStart = System.currentTimeMillis();
         // 场景图
         List<Scene> scenes = storyboard.getScenes();
         for (Scene scene : scenes) {
@@ -77,6 +82,7 @@ public class VolcanoImageModelStrategy implements ImageModelStrategy {
             String base64DataUri = "data:image/" + imageFormat + ";base64," + base64Image;
             image.add(base64DataUri);
         }
+        long encodeCost = System.currentTimeMillis() - stageStart;
 
 
         // 1. 获取模型实例
@@ -100,10 +106,19 @@ public class VolcanoImageModelStrategy implements ImageModelStrategy {
 
 
         // 3. 发送请求
+        stageStart = System.currentTimeMillis();
         String response = httpExecutor.post(baseUrl, modelInstance.getPath(), modelInstance.getApiKey(), body).block();
+        long httpCost = System.currentTimeMillis() - stageStart;
 
         // 4. 解析结果
-        return extractResponse(response);
+        stageStart = System.currentTimeMillis();
+        String result = extractResponse(response);
+        long parseCost = System.currentTimeMillis() - stageStart;
+
+        long totalCost = System.currentTimeMillis() - totalStart;
+        log.info("[VolcanoImage] storyboardId={} total={}ms encode={}ms http={}ms parse={}ms", storyboard.getId(), totalCost, encodeCost, httpCost, parseCost);
+
+        return result;
     }
 
     // 响应结果提取
