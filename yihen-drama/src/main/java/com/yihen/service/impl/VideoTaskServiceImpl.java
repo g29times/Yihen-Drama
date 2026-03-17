@@ -109,7 +109,7 @@ public class VideoTaskServiceImpl extends ServiceImpl<VideoTaskMapper, VideoTask
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
-commonE
+
                 }, executorService);
                 futures.add(future);
             }
