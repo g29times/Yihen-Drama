@@ -26,16 +26,16 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-
+/**
+ * @author Yihen
+ * date: 2022/9/1 10:56
+ */
 @Slf4j
 @Service
 public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storyboard> implements StoryboardService {
-
 
     @Autowired
     private EpisodeMapper episodeMapper;

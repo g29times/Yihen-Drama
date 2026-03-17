@@ -24,6 +24,7 @@ import com.yihen.util.UrlUtils;
 import com.yihen.websocket.TaskStatusWebSocketHandler;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -33,8 +34,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Executor;
+
+
 
 @Service
 public class VideoTaskServiceImpl extends ServiceImpl<VideoTaskMapper, VideoTask> implements VideoTaskService {
@@ -110,7 +112,7 @@ public class VideoTaskServiceImpl extends ServiceImpl<VideoTaskMapper, VideoTask
                         throw new RuntimeException(e);
                     }
 
-                }, executorService);
+                }, commonExecutor);
                 futures.add(future);
             }
         }
