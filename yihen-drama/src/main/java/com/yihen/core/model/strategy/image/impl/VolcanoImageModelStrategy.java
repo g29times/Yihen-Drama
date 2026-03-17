@@ -13,6 +13,7 @@ import com.yihen.util.MinioUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -39,6 +40,9 @@ public class VolcanoImageModelStrategy implements ImageModelStrategy {
 
     @Autowired
     private HttpExecutor httpExecutor;
+
+    @Value("${volcano.image-fallback-url:}")
+    private String imageFallbackUrl;
 
     @Override
     public String create(ImageModelRequestVO imageModelRequestVO) throws Exception {
@@ -83,7 +87,10 @@ public class VolcanoImageModelStrategy implements ImageModelStrategy {
         }
 
         String imageUrl;
-        if (minioProperties != null && !ObjectUtils.isEmpty(minioProperties.getPublicDownloadEndpoint())) {
+        if (!ObjectUtils.isEmpty(imageFallbackUrl)) {
+            imageUrl = imageFallbackUrl;
+        }
+        else if (minioProperties != null && !ObjectUtils.isEmpty(minioProperties.getPublicDownloadEndpoint())) {
             String base = minioProperties.getPublicDownloadEndpoint();
             if (base.endsWith("/")) {
                 base = base.substring(0, base.length() - 1);

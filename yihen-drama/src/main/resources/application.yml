@@ -50,6 +50,9 @@ minio:
   secret-key: ${MINIO_SECRET_KEY:minioadmin}
   public-download-endpoint: http://101.47.13.126:9000
 
+volcano:
+  image-fallback-url: https://i0.hdslb.com/bfs/openplatform/7d83a4ef2391015fb6f97a1a2c23a8a2c9065012.jpg
+
 qdrant:
   host: localhost
   port: 6334
