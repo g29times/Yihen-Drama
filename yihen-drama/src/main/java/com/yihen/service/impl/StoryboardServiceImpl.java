@@ -262,6 +262,11 @@ public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storybo
     @Override
     public Storyboard generateFirstFramePrompt(Long id,Long projectId , Long modelId) throws Exception {
         long start = System.currentTimeMillis();
+        log.info("------------------generateFirstFramePrompt start------------------");
+        log.info("------------------generateFirstFramePrompt start------------------");
+        log.info("------------------generateFirstFramePrompt start------------------");
+        log.info("------------------generateFirstFramePrompt start------------------");
+        log.info("------------------generateFirstFramePrompt start------------------");
         log.info("[Storyboard] enter generateFirstFramePrompt id={} projectId={} modelId={}", id, projectId, modelId);
         // 1. 获取分镜对象
 
@@ -272,8 +277,10 @@ public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storybo
         textModelRequestVO.setModelId(modelId);
         textModelRequestVO.setProjectId(projectId);
         textModelRequestVO.setObject(storyboard);
-        String response = firstFrameGenerateTextModelService.extract(textModelRequestVO);
 
+        log.info("[Storyboard] call firstFrameGenerateTextModelService.extract");
+        String response = firstFrameGenerateTextModelService.extract(textModelRequestVO);
+        log.info("[Storyboard] firstFrameGenerateTextModelService.extract response={}", response);
 
         storyboard.setImagePrompt(response);
 

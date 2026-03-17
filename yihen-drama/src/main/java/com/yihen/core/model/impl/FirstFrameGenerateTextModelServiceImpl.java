@@ -43,7 +43,7 @@ public class FirstFrameGenerateTextModelServiceImpl extends TextModelServiceImpl
 
 
     @Override
-    public  String extract(TextModelRequestVO textModelRequestVO) throws Exception {
+    public String extract(TextModelRequestVO textModelRequestVO) throws Exception {
         long start = System.currentTimeMillis();
         Storyboard storyboard = (Storyboard) textModelRequestVO.getObject();
         log.info("[FirstFrameText] enter extract storyboardId={} modelId={}", storyboard != null ? storyboard.getId() : null, textModelRequestVO.getModelId());

@@ -10,16 +10,18 @@ import com.yihen.mapper.PromptTemplateMapper;
 import com.yihen.service.PromptTemplateDefaultService;
 import com.yihen.service.PromptTemplateService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Executor;
 
 @Service
 public class PromptTemplateServiceImpl extends ServiceImpl<PromptTemplateMapper, PromptTemplate> implements PromptTemplateService {
 
-    private static final ExecutorService EXECUTORSERVICE = Executors.newFixedThreadPool(2);
+    @Autowired
+    @Qualifier("commonExecutor")
+    private Executor commonExecutor;
 
     @Autowired
     private PromptTemplateMapper promptTemplateMapper;
@@ -43,7 +45,7 @@ public class PromptTemplateServiceImpl extends ServiceImpl<PromptTemplateMapper,
                     defaultTemplate.setStatus((byte) 1);
                     promptTemplateDefaultService.save(defaultTemplate);
                 }
-            }, EXECUTORSERVICE);
+            }, commonExecutor);
         }
 
         return result;

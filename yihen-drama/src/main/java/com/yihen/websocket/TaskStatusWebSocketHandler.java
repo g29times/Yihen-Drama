@@ -6,6 +6,7 @@ import com.yihen.entity.VideoTask;
 import com.yihen.enums.TaskType;
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.OnClose;
+import jakarta.websocket.OnError;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.PathParam;
@@ -46,11 +47,24 @@ public class TaskStatusWebSocketHandler extends TextWebSocketHandler {
 
     //关闭连接时调用
     @OnClose
-    public void onClose(@PathParam(value = "project-id") Long projectId){
+    public void onClose(Session session, @PathParam(value = "project-id") Long projectId){
         // 移除下线用户连接信息
         sessionPools.remove(projectId);
 
         log.info("项目:"+projectId+"下线!");
+    }
+
+    @OnError
+    public void onError(Session session, Throwable error, @PathParam(value = "project-id") Long projectId) {
+        log.warn("项目:{} WebSocket发生错误: {}", projectId, error.getMessage());
+        // EOFException通常是客户端主动断开（比如刷新页面、Nginx超时截断等），打印warn即可，避免抛出给Tomcat容器导致长堆栈
+        if (session != null && session.isOpen()) {
+            try {
+                session.close();
+            } catch (IOException e) {
+                log.error("关闭发生错误的session失败", e);
+            }
+        }
     }
 
     // 给指定项目发送信息

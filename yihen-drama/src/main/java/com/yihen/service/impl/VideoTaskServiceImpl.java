@@ -55,8 +55,9 @@ public class VideoTaskServiceImpl extends ServiceImpl<VideoTaskMapper, VideoTask
 
 
 
-    private static final ExecutorService executorService = Executors.newFixedThreadPool(10);  // 根据需要调整线程池大小
-
+    @Autowired
+    @Qualifier("commonExecutor")
+    private Executor commonExecutor;
 
     @Override
     public VideoTask getTaskByTaskId(Long id) throws Exception {
@@ -108,7 +109,7 @@ public class VideoTaskServiceImpl extends ServiceImpl<VideoTaskMapper, VideoTask
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
-
+commonE
                 }, executorService);
                 futures.add(future);
             }

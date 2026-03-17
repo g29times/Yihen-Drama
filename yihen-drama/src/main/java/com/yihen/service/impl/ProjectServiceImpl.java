@@ -58,7 +58,9 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     @Autowired
     private MinioUtil minioUtil;
 
-    private static final ExecutorService EXECUTORSERVICE = Executors.newFixedThreadPool(5);
+    @Autowired
+    @Qualifier("commonExecutor")
+    private Executor commonExecutor;
 
     @Override
     public Project createProject(ProjectCreateRequestVO project) {
