@@ -69,7 +69,3 @@ mybatis-plus:
       logic-delete-field: isDeleted #逻辑删除字段
       logic-delete-value: 1
       logic-not-delete-value: 0
-    db-config:
-      logic-delete-field: isDeleted #逻辑删除字段
-      logic-delete-value: 1
-      logic-not-delete-value: 0
