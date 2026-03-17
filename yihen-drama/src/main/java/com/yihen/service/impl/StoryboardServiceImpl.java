@@ -20,7 +20,7 @@ import com.yihen.enums.TaskType;
 import com.yihen.mapper.EpisodeMapper;
 import com.yihen.mapper.StoryboardMapper;
 import com.yihen.service.*;
-import kotlin.jvm.internal.Lambda;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +32,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
+@Slf4j
 @Service
 public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storyboard> implements StoryboardService {
 
