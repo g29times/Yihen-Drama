@@ -56,6 +56,7 @@ public class VolcanoImageModelStrategy implements ImageModelStrategy {
 
         // 0. 获取分镜对象
         Storyboard storyboard = (Storyboard) imageModelRequestVO.getObject();
+        log.info("[VolcanoImage] enter createByTextAndImage storyboardId={} modelInstanceId={}", storyboard != null ? storyboard.getId() : null, imageModelRequestVO.getModelInstanceId());
 
         ArrayList<String> image = new ArrayList<>();
 

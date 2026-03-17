@@ -45,12 +45,13 @@ public class FirstFrameGenerateTextModelServiceImpl extends TextModelServiceImpl
     @Override
     public  String extract(TextModelRequestVO textModelRequestVO) throws Exception {
         long start = System.currentTimeMillis();
+        Storyboard storyboard = (Storyboard) textModelRequestVO.getObject();
+        log.info("[FirstFrameText] enter extract storyboardId={} modelId={}", storyboard != null ? storyboard.getId() : null, textModelRequestVO.getModelId());
         // 1) 提示词模板
         PromptTemplate promptTemplate =
                 promptTemplateService.getDefaultTemplateBySceneCode(textModelRequestVO.getSceneCode());
 
         // 2) 拿出分镜
-        Storyboard storyboard =(Storyboard) textModelRequestVO.getObject();
 
         // 3) 获取风格模板
         Long projectStyleById = projectMapper.getProjectStyleById(textModelRequestVO.getProjectId());

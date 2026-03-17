@@ -81,7 +81,7 @@ services:
       context: ./yihen-drama/docker/elasticsearch
       dockerfile: Dockerfile
       args:
-        ES_BASE_IMAGE: docker.1ms.run/library/elasticsearch:8.11.3
+        ES_BASE_IMAGE: elasticsearch:8.11.3
         IK_PLUGIN_URL: https://get.infini.cloud/elasticsearch/analysis-ik/8.11.3
         PINYIN_PLUGIN_URL: https://get.infini.cloud/elasticsearch/analysis-pinyin/8.11.3
     image: yihen-elasticsearch:8.11.3-ik-pinyin
@@ -135,8 +135,8 @@ services:
       context: ./yihen-drama
       dockerfile: Dockerfile
       args:
-        MAVEN_IMAGE: docker.1ms.run/library/maven:3.9.9-eclipse-temurin-17
-        JRE_IMAGE: docker.1ms.run/library/eclipse-temurin:17-jre
+        MAVEN_IMAGE: maven:3.9.9-eclipse-temurin-17
+        JRE_IMAGE: eclipse-temurin:17-jre
     container_name: yihen-backend
     restart: unless-stopped
     depends_on:

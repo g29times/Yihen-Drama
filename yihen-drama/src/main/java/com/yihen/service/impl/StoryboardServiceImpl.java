@@ -262,6 +262,7 @@ public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storybo
     @Override
     public Storyboard generateFirstFramePrompt(Long id,Long projectId , Long modelId) throws Exception {
         long start = System.currentTimeMillis();
+        log.info("[Storyboard] enter generateFirstFramePrompt id={} projectId={} modelId={}", id, projectId, modelId);
         // 1. 获取分镜对象
 
         Storyboard storyboard = getStoryboardsById(id);
@@ -287,6 +288,7 @@ public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storybo
     @Override
     public Storyboard generateFirstFrame(Long shotId, Long projectId, Long modelInstanceId) throws Exception {
         long start = System.currentTimeMillis();
+        log.info("[Storyboard] enter generateFirstFrame shotId={} projectId={} modelInstanceId={}", shotId, projectId, modelInstanceId);
         // 获取对应的策略模型
         ImageModelStrategy strategy = imageModelFactory.getStrategy(modelInstanceId);
 
@@ -311,6 +313,7 @@ public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storybo
     @Override
     public Storyboard generateShotVideoPrompt(Long shotId, Long projectId, Long modelInstanceId) throws Exception {
         long start = System.currentTimeMillis();
+        log.info("[Storyboard] enter generateShotVideoPrompt shotId={} projectId={} modelInstanceId={}", shotId, projectId, modelInstanceId);
         // 1. 获取分镜对象
 
         Storyboard storyboard = getStoryboardsById(shotId);
@@ -336,6 +339,7 @@ public class StoryboardServiceImpl extends ServiceImpl<StoryboardMapper, Storybo
     @Override
     public VideoTask createShotVideoTask(Long shotId, Long projectId, Long modelInstanceId, Map<String,Object> params) throws Exception {
         long start = System.currentTimeMillis();
+        log.info("[Storyboard] enter createShotVideoTask shotId={} projectId={} modelInstanceId={} paramsKeys={}", shotId, projectId, modelInstanceId, params != null ? params.keySet() : "null");
         // 非空校验
         if (ObjectUtils.isEmpty(modelInstanceId)) {
 
