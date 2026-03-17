@@ -15,7 +15,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.net.URLEncoder;
@@ -85,13 +84,15 @@ public class VolcanoImageModelStrategy implements ImageModelStrategy {
 
         String imageUrl;
         if (minioProperties != null && !ObjectUtils.isEmpty(minioProperties.getPublicDownloadEndpoint())) {
-            String prefixBase64 = Base64.getEncoder().encodeToString(refObjectName.getBytes(StandardCharsets.UTF_8));
-            String prefixEncoded = URLEncoder.encode(prefixBase64, StandardCharsets.UTF_8);
             String base = minioProperties.getPublicDownloadEndpoint();
             if (base.endsWith("/")) {
                 base = base.substring(0, base.length() - 1);
             }
-            imageUrl = base + "/api/v1/buckets/" + MinioConstant.BUCKET_NAME + "/objects/download?preview=true&prefix=" + prefixEncoded + "&version_id=null";
+
+            // 构造“可公网直连的对象URL”，避免使用 console 的 download API（外部抓取易超时/重定向/鉴权）
+            // 期望 publicDownloadEndpoint 指向 Minio S3 网关或你对外暴露的静态资源代理（能直接 GET 文件）
+            String encodedObjectName = encodePath(refObjectName);
+            imageUrl = base + "/" + MinioConstant.BUCKET_NAME + "/" + encodedObjectName;
         } else {
             imageUrl = minioUtil.getObjectUrl(MinioConstant.BUCKET_NAME, refObjectName);
         }
@@ -154,6 +155,23 @@ public class VolcanoImageModelStrategy implements ImageModelStrategy {
 
         return content;
 
+    }
+
+    private static String encodePath(String objectName) {
+        if (objectName == null) {
+            return null;
+        }
+        String[] parts = objectName.split("/");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) {
+                sb.append('/');
+            }
+            // URLEncoder 默认会把空格转为 +，这里转换成 %20 更符合 URL path 语义
+            String encoded = URLEncoder.encode(parts[i], StandardCharsets.UTF_8).replace("+", "%20");
+            sb.append(encoded);
+        }
+        return sb.toString();
     }
 
     @Override
