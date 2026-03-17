@@ -10,17 +10,16 @@ import com.yihen.http.HttpExecutor;
 import com.yihen.mapper.ModelDefinitionMapper;
 import com.yihen.service.ModelManageService;
 import com.yihen.util.MinioUtil;
-import com.yihen.util.UrlUtils;
-import io.minio.GetObjectResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 @Slf4j
 @Component
 public class VolcanoImageModelStrategy implements ImageModelStrategy {
@@ -58,31 +57,45 @@ public class VolcanoImageModelStrategy implements ImageModelStrategy {
         Storyboard storyboard = (Storyboard) imageModelRequestVO.getObject();
         log.info("[VolcanoImage] enter createByTextAndImage storyboardId={} modelInstanceId={}", storyboard != null ? storyboard.getId() : null, imageModelRequestVO.getModelInstanceId());
 
-        ArrayList<String> image = new ArrayList<>();
-
-        // 将分镜关联图像转换为base64
         stageStart = System.currentTimeMillis();
-        // 场景图
+
+        String refObjectPath = null;
         List<Scene> scenes = storyboard.getScenes();
-        for (Scene scene : scenes) {
-            GetObjectResponse object = minioUtil.getObject(MinioConstant.BUCKET_NAME, scene.getThumbnail());
-            String imageFormat = UrlUtils.extractFileExtension(scene.getThumbnail());
-            byte[] bytes = object.readAllBytes();
-            String base64Image = Base64.getEncoder().encodeToString(bytes);
-            String base64DataUri = "data:image/" + imageFormat + ";base64," + base64Image;
-            image.add(base64DataUri);
+        if (scenes != null && !scenes.isEmpty()) {
+            refObjectPath = scenes.get(0).getThumbnail();
+        }
+        if (ObjectUtils.isEmpty(refObjectPath)) {
+            List<Characters> characters = storyboard.getCharacters();
+            if (characters != null && !characters.isEmpty()) {
+                refObjectPath = characters.get(0).getAvatar();
+            }
         }
 
-        // 角色图
-        List<Characters> characters = storyboard.getCharacters();
-        for (Characters character : characters) {
-            GetObjectResponse object = minioUtil.getObject(MinioConstant.BUCKET_NAME, character.getAvatar());
-            String imageFormat = UrlUtils.extractFileExtension(character.getAvatar());
-            byte[] bytes = object.readAllBytes();
-            String base64Image = Base64.getEncoder().encodeToString(bytes);
-            String base64DataUri = "data:image/" + imageFormat + ";base64," + base64Image;
-            image.add(base64DataUri);
+        if (ObjectUtils.isEmpty(refObjectPath)) {
+            throw new IllegalStateException("参考图为空：场景thumbnail和角色avatar都为空");
         }
+
+        String refObjectName = minioUtil.parseObjectName(refObjectPath);
+        while (refObjectName != null && refObjectName.startsWith("/")) {
+            refObjectName = refObjectName.substring(1);
+        }
+        if (ObjectUtils.isEmpty(refObjectName)) {
+            throw new IllegalStateException("参考图 objectName 解析为空：" + refObjectPath);
+        }
+
+        String imageUrl;
+        if (minioProperties != null && !ObjectUtils.isEmpty(minioProperties.getPublicDownloadEndpoint())) {
+            String prefixBase64 = Base64.getEncoder().encodeToString(refObjectName.getBytes(StandardCharsets.UTF_8));
+            String prefixEncoded = URLEncoder.encode(prefixBase64, StandardCharsets.UTF_8);
+            String base = minioProperties.getPublicDownloadEndpoint();
+            if (base.endsWith("/")) {
+                base = base.substring(0, base.length() - 1);
+            }
+            imageUrl = base + "/api/v1/buckets/" + MinioConstant.BUCKET_NAME + "/objects/download?preview=true&prefix=" + prefixEncoded + "&version_id=null";
+        } else {
+            imageUrl = minioUtil.getObjectUrl(MinioConstant.BUCKET_NAME, refObjectName);
+        }
+
         long encodeCost = System.currentTimeMillis() - stageStart;
 
 
@@ -102,8 +115,7 @@ public class VolcanoImageModelStrategy implements ImageModelStrategy {
         // 放入文本提示词
         body.put("prompt", storyboard.getImagePrompt());
 
-        // 放入参考图
-        body.put("image", image);
+        body.put("image", imageUrl);
 
 
         // 3. 发送请求

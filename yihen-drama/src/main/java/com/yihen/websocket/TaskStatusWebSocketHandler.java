@@ -21,6 +21,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,8 +42,25 @@ public class TaskStatusWebSocketHandler extends TextWebSocketHandler {
     @OnOpen //建立连接成功调用
     public void onOpen(Session session, @PathParam(value = "project-id") Long projectId) {
         sessionPools.put(projectId, session);
+        session.setMaxIdleTimeout(0);
 
         log.info("项目:"+projectId+"连接成功");
+    }
+
+    @jakarta.websocket.OnMessage
+    public void onMessage(String message, Session session, @PathParam(value = "project-id") Long projectId) {
+        if (message == null) {
+            return;
+        }
+        if ("ping".equalsIgnoreCase(message.trim())) {
+            try {
+                if (session != null && session.isOpen()) {
+                    session.getBasicRemote().sendText("pong");
+                }
+            } catch (Exception e) {
+                log.warn("项目:{} 心跳响应失败: {}", projectId, e.toString());
+            }
+        }
     }
 
     //关闭连接时调用
@@ -56,8 +74,13 @@ public class TaskStatusWebSocketHandler extends TextWebSocketHandler {
 
     @OnError
     public void onError(Session session, Throwable error, @PathParam(value = "project-id") Long projectId) {
-        log.warn("项目:{} WebSocket发生错误: {}", projectId, error.getMessage());
-        // EOFException通常是客户端主动断开（比如刷新页面、Nginx超时截断等），打印warn即可，避免抛出给Tomcat容器导致长堆栈
+        if (error instanceof EOFException) {
+            log.warn("项目:{} WebSocket发生EOF断开: {}", projectId, error.toString());
+            return;
+        }
+
+        log.warn("项目:{} WebSocket发生错误: {}", projectId, error != null ? error.toString() : "null", error);
+        // 非EOF异常：主动关闭，触发前端重连，避免服务端保持异常会话
         if (session != null && session.isOpen()) {
             try {
                 session.close();

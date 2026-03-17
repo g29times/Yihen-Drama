@@ -48,6 +48,7 @@ minio:
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   end-point: ${MINIO_END_POINT:http://127.0.0.1:9000}
   secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  public-download-endpoint: http://101.47.13.126:9001
 
 qdrant:
   host: localhost
