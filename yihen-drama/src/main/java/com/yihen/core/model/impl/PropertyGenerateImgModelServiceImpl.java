@@ -60,7 +60,8 @@ public class PropertyGenerateImgModelServiceImpl extends ImgModelServiceImpl imp
         Characters characters = characterService.getById(charactersRequestVO.getCharacterId());
         characters.setAvatar(imgUrl);
         characters.setDescription(charactersRequestVO.getDescription());
-
+        // 返回完整提示词用于排查
+        characters.setDescription(message);
         return characters;
     }
 

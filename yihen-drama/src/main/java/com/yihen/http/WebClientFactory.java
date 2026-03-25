@@ -37,6 +37,7 @@ public class WebClientFactory {
                 url -> WebClient.builder()
                         .baseUrl(url)
                         .clientConnector(new ReactorClientHttpConnector(createLongTimeoutHttpClient()))
+                        .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB 缓冲区
                         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                         .build()
                 );
