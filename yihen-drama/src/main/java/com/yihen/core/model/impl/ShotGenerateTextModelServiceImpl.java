@@ -77,11 +77,14 @@ public class ShotGenerateTextModelServiceImpl extends TextModelServiceImpl imple
         // 5) 调用大模型
         String response = generate(textModelRequestVO.getModelId(), message);
 
+        // 5.1 清洗模型输出，避免混入控制字符/markdown 包裹导致 JSON 解析失败
+        String cleanedResponse = sanitizeModelJson(response);
+
         // 6) 解析 shots -> List<Storyboard>
         List<Storyboard> storyboards = new ArrayList<>();
 
         try {
-            JSONObject root = JSON.parseObject(response);
+            JSONObject root = JSON.parseObject(cleanedResponse);
             JSONArray shotsArray = root.getJSONArray("shots");
 
             if (ObjectUtils.isEmpty(shotsArray)) {
@@ -141,10 +144,60 @@ public class ShotGenerateTextModelServiceImpl extends TextModelServiceImpl imple
 
         } catch (Exception e) {
             log.error("解析分镜结果失败: {}", e.getMessage(), e);
+            log.error("[StoryboardGen] responseLen={} cleanedLen={} responseHead={} responseTail={} cleanedTail={}",
+                    response == null ? -1 : response.length(),
+                    cleanedResponse == null ? -1 : cleanedResponse.length(),
+                    safeSnippet(response, 0, 200),
+                    safeTailSnippet(response, 200),
+                    safeTailSnippet(cleanedResponse, 200));
             throw new Exception("解析分镜结果失败: " + e.getMessage());
         }
 
         return storyboards;
+    }
+
+    private String sanitizeModelJson(String raw) {
+        if (raw == null) return null;
+
+        String s = raw;
+
+        // 去除可能的 BOM
+        if (!s.isEmpty() && s.charAt(0) == '\uFEFF') {
+            s = s.substring(1);
+        }
+
+        // 如果模型返回被 ```json ... ``` 包起来，尽量截取 JSON 主体
+        int start = s.indexOf('{');
+        int end = s.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            s = s.substring(start, end + 1);
+        }
+
+        // 过滤不可见控制字符（保留常见空白字符）
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            if (ch == '\n' || ch == '\r' || ch == '\t' || ch >= 0x20) {
+                sb.append(ch);
+            }
+        }
+
+        return sb.toString().trim();
+    }
+
+    private String safeSnippet(String s, int start, int maxLen) {
+        if (s == null) return null;
+        if (start < 0) start = 0;
+        if (start >= s.length()) return "";
+        int end = Math.min(s.length(), start + Math.max(0, maxLen));
+        return s.substring(start, end).replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
+    }
+
+    private String safeTailSnippet(String s, int maxLen) {
+        if (s == null) return null;
+        int len = s.length();
+        int start = Math.max(0, len - Math.max(0, maxLen));
+        return safeSnippet(s, start, maxLen);
     }
 
     /**
