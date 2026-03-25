@@ -69,8 +69,9 @@ public class ShotGenerateTextModelServiceImpl extends TextModelServiceImpl imple
         // 4) 替换模板变量
         String message = promptTemplate.getPromptContent()
                 .replace("{{input}}", textModelRequestVO.getText())
-                .replace("{{existing_characters}}", JSON.toJSONString(property.getCharacters()))
-                .replace("{{existing_scenes}}", JSON.toJSONString(property.getScenes()));
+                // 这里不要把完整角色/场景对象塞给模型（字段太多，容易导致输出被 max_tokens 截断）
+                .replace("{{existing_characters}}", JSON.toJSONString(simplifyCharacters(property != null ? property.getCharacters() : null)))
+                .replace("{{existing_scenes}}", JSON.toJSONString(simplifyScenes(property != null ? property.getScenes() : null)));
 
         textModelRequestVO.setText(message);
 
@@ -150,6 +151,66 @@ public class ShotGenerateTextModelServiceImpl extends TextModelServiceImpl imple
                     safeSnippet(response, 0, 200),
                     safeTailSnippet(response, 200),
                     safeTailSnippet(cleanedResponse, 200));
+
+            // 常见原因：模型输出被截断 / 包含多余文本。这里做一次重试，强约束只返回完整 JSON。
+            try {
+                String retryHint = "\n\n你必须仅输出严格 JSON（不要 markdown、不要解释、不要多余文本），并确保 JSON 完整闭合。" +
+                        "输出格式：{\"shots\":[{\"shotText\":\"...\",\"characters\":[{\"id\":123,\"name\":\"...\"}],\"scene\":{\"id\":1,\"name\":\"...\"}}]}";
+                String retryResponse = generate(textModelRequestVO.getModelId(), message + retryHint);
+                String retryCleaned = sanitizeModelJson(retryResponse);
+                JSONObject root = JSON.parseObject(retryCleaned);
+                JSONArray shotsArray = root.getJSONArray("shots");
+                if (ObjectUtils.isEmpty(shotsArray)) {
+                    return storyboards;
+                }
+
+                // 复用原本解析逻辑：把 shotsArray 再走一遍
+                for (int i = 0; i < shotsArray.size(); i++) {
+                    JSONObject shot = shotsArray.getJSONObject(i);
+
+                    Storyboard sb = new Storyboard();
+                    sb.setShotNumber(i + 1);
+                    sb.setOrderIndex(i);
+
+                    String shotText = shot.getString("shotText");
+                    if (ObjectUtils.isEmpty(shotText)) shotText = shot.getString("description");
+                    sb.setDescription(shotText);
+
+                    List<Characters> boundCharacters = new ArrayList<>();
+                    JSONArray charArr = shot.getJSONArray("characters");
+                    if (!ObjectUtils.isEmpty(charArr) ) {
+                        for (int j = 0; j < charArr.size(); j++) {
+                            JSONObject cObj = charArr.getJSONObject(j);
+                            Characters resolved = resolveCharacter(cObj, characterById, characterByName);
+                            if (!ObjectUtils.isEmpty(resolved)) boundCharacters.add(resolved);
+                        }
+                    }
+                    sb.setCharacters(boundCharacters);
+
+                    List<Scene> boundScenes = new ArrayList<>();
+                    JSONObject sceneObj = shot.getJSONObject("scene");
+                    if (!ObjectUtils.isEmpty(sceneObj) ) {
+                        Scene resolved = resolveScene(sceneObj, sceneById, sceneByName);
+                        if ( !ObjectUtils.isEmpty(resolved)) boundScenes.add(resolved);
+                    }
+                    JSONArray scenesArr = shot.getJSONArray("scenes");
+                    if (scenesArr != null && !scenesArr.isEmpty()) {
+                        for (int k = 0; k < scenesArr.size(); k++) {
+                            JSONObject sObj = scenesArr.getJSONObject(k);
+                            Scene resolved = resolveScene(sObj, sceneById, sceneByName);
+                            if (resolved != null) boundScenes.add(resolved);
+                        }
+                    }
+                    sb.setScenes(boundScenes);
+
+                    storyboards.add(sb);
+                }
+
+                return storyboards;
+            } catch (Exception retryEx) {
+                log.error("[StoryboardGen] retry parse failed: {}", retryEx.getMessage(), retryEx);
+            }
+
             throw new Exception("解析分镜结果失败: " + e.getMessage());
         }
 
@@ -198,6 +259,32 @@ public class ShotGenerateTextModelServiceImpl extends TextModelServiceImpl imple
         int len = s.length();
         int start = Math.max(0, len - Math.max(0, maxLen));
         return safeSnippet(s, start, maxLen);
+    }
+
+    private List<Map<String, Object>> simplifyCharacters(List<Characters> characters) {
+        if (characters == null || characters.isEmpty()) return List.of();
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (Characters c : characters) {
+            if (c == null) continue;
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", c.getId());
+            m.put("name", c.getName());
+            list.add(m);
+        }
+        return list;
+    }
+
+    private List<Map<String, Object>> simplifyScenes(List<Scene> scenes) {
+        if (scenes == null || scenes.isEmpty()) return List.of();
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (Scene s : scenes) {
+            if (s == null) continue;
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", s.getId());
+            m.put("name", s.getName());
+            list.add(m);
+        }
+        return list;
     }
 
     /**
