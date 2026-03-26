@@ -1,0 +1,70 @@
+# 日志
+docker logs -f --tail 500 yihen-backend
+
+docker logs yihen-backend 2>&1 | less
+
+docker logs --tail 500 yihen-backend 2>&1 | grep -E -C 5 "400 Bad Request.*volces\.com"
+
+## 例（前端）
+2026-03-16T22:27:49.568+08:00 ERROR 7 --- [nio-8080-exec-9] c.y.e.GlobalExceptionHandler             : 代码出现异常，异常信息为：400 Bad Request from POST https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks 
+## 查看
+docker logs yihen-backend 2>&1 | grep -E "400.*volces\.com"
+
+---
+
+# 重启
+docker restart yihen-frontend
+
+---
+
+# 前端
+### 前端版：编译与重启脚本（海外服务器优化版）
+
+#### 第一步：在 Node 容器中编译
+利用容器环境保持构建环境的纯净，不依赖宿主机安装 Node。
+
+```bash
+# 进入前端源码目录
+cd ~/workspace/Yihen-Drama/yihen-ai-short-drama-front-end/frontend
+
+# 1. 拉取代码
+git pull
+
+# 2. 在容器中执行构建
+# 提示：因为在海外，直接用官方 registry 即可
+docker run --rm -v $(pwd):/app -v /root/.npm:/root/.npm -w /app \
+node:20-slim \
+sh -c "npm install && npm run build"
+```
+*   **Ti-Ne 细节：** 挂载 `/root/.npm` 是为了持久化缓存。Vite 构建非常快，配合缓存几乎是秒级的。
+
+#### 第二步：通过 Docker Compose 构建并重启
+这一步会将上一步生成的 `dist` 目录打包进你的 Nginx 镜像。
+
+```bash
+cd ~/workspace/Yihen-Drama
+docker compose -f docker-compose.full.yml up -d --build frontend
+```
+
+---
+
+# 编译后端
+#### 第一步：在 Maven 容器中编译（生产最新的 Jar 包）
+这一步是把你的 Java 源码（`.java`）变成可执行的字节码（`.jar`）。
+```
+cd ~/workspace/Yihen-Drama/yihen-drama
+
+docker run --rm -v $(pwd):/app -v /root/.m2:/root/.m2 -w /app \
+maven:3.9.9-eclipse-temurin-17 \
+mvn clean package -DskipTests
+```
+*验证点：执行完后，检查 `yihen-drama/target/` 目录下是否生成了最新的 `.jar` 文件。*
+
+#### 第二步：通过 Docker Compose 构建镜像（将 Jar 包塞进容器）
+这一步是把上一步生成的 Jar 包封装进 Docker 镜像，并重启容器。
+```
+cd ~/workspace/Yihen-Drama
+docker compose -f docker-compose.full.yml up -d --build backend
+```
+
+docker logs -f --tail 500 yihen-backend
